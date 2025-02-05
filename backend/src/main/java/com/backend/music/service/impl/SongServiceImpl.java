@@ -1,113 +1,240 @@
 package com.backend.music.service.impl;
 
-import com.backend.music.dto.SongDTO;
-import com.backend.music.mapper.SongMapper;
-import com.backend.music.model.Song;
-import com.backend.music.repository.SongRepository;
-import com.backend.music.service.SongService;
+import com.backend.music.dto.request.SongRequest;
+import com.backend.music.dto.response.SongResponse;
 import com.backend.music.exception.ResourceNotFoundException;
+import com.backend.music.mapper.SongMapper;
+import com.backend.music.model.Album;
+import com.backend.music.model.Song;
+import com.backend.music.repository.AlbumRepository;
+import com.backend.music.repository.SongRepository;
+import com.backend.music.service.FileStorageService;
+import com.backend.music.service.SongService;
+import com.backend.music.util.FileValidationUtils;
+
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.mongodb.gridfs.GridFsTemplate;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import java.io.BufferedInputStream;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class SongServiceImpl implements SongService {
     
-    private static final Logger logger = LoggerFactory.getLogger(SongServiceImpl.class);
-    
     private final SongRepository songRepository;
+    private final AlbumRepository albumRepository;
     private final SongMapper songMapper;
-    private final GridFsTemplate gridFsTemplate;
-    private final FileValidationService fileValidationService;
-    
+    private final FileStorageService fileStorageService;
+    private final FileValidationUtils fileValidationUtils;
+
     @Override
-    public Page<SongDTO> getAllSongs(Pageable pageable) {
+    public Page<SongResponse> getAllSongs(Pageable pageable) {
         return songRepository.findAll(pageable)
-                .map(songMapper::toDto);
+            .map(songMapper::toResponse);
     }
-    
+
     @Override
-    public Page<SongDTO> searchByTitle(String title, Pageable pageable) {
-        return songRepository.findByTitreContainingIgnoreCase(title, pageable)
-                .map(songMapper::toDto);
+    public Page<SongResponse> searchByTitle(String title, Pageable pageable) {
+        return songRepository.findByTitleContainingIgnoreCase(title, pageable)
+            .map(songMapper::toResponse);
     }
-    
+
     @Override
-    public Page<SongDTO> getSongsByAlbum(String albumId, Pageable pageable) {
+    public Page<SongResponse> getSongsByAlbum(String albumId, Pageable pageable) {
         return songRepository.findByAlbumId(albumId, pageable)
-                .map(songMapper::toDto);
+            .map(songMapper::toResponse);
     }
-    
+
     @Override
-    public SongDTO getSongById(String id) {
+    public SongResponse getSongById(String id) {
         return songRepository.findById(id)
-                .map(songMapper::toDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Song not found with id: " + id));
+            .map(songMapper::toResponse)
+            .orElseThrow(() -> new ResourceNotFoundException("Song not found"));
     }
-    
+
     @Override
-    public SongDTO createSong(SongDTO songDTO, MultipartFile audioFile) {
-        try {
-            fileValidationService.validateAudioFile(audioFile);
-            logger.info("Creating new song: {}", songDTO.getTitre());
-            
-            String audioFileId = gridFsTemplate.store(
-                audioFile.getInputStream(),
-                audioFile.getOriginalFilename(),
-                audioFile.getContentType()
-            ).toString();
-            
-            songDTO.setAudioFileId(audioFileId);
-            Song song = songMapper.toEntity(songDTO);
-            Song savedSong = songRepository.save(song);
-            logger.info("Song created successfully with id: {}", savedSong.getId());
-            return songMapper.toDto(savedSong);
-        } catch (IOException e) {
-            logger.error("Failed to store audio file", e);
-            throw new RuntimeException("Failed to store audio file", e);
+    @Transactional
+    public SongResponse createSong(SongRequest request) {
+        // Validate audio file
+        if (request.getAudioFile() != null && !fileValidationUtils.isValidAudioFile(request.getAudioFile())) {
+            throw new IllegalArgumentException("Invalid audio file format");
         }
+        
+        Song song = songMapper.toEntity(request);
+        
+        // Handle audio file
+        if (request.getAudioFile() != null) {
+            String audioFileId = fileStorageService.store(request.getAudioFile());
+            song.setAudioFileId(audioFileId);
+            song.setDuration(fileStorageService.getAudioDuration(request.getAudioFile()));
+        }
+        
+        // Handle image file
+        if (request.getImageFile() != null) {
+            String imageFileId = fileStorageService.store(request.getImageFile());
+            song.setImageFileId(imageFileId);
+        }
+        
+        // Set timestamps
+        LocalDateTime now = LocalDateTime.now();
+        song.setCreatedAt(now);
+        song.setUpdatedAt(now);
+        
+        // Handle album relationship
+        if (request.getAlbumId() != null) {
+            Album album = albumRepository.findById(request.getAlbumId())
+                .orElseThrow(() -> new RuntimeException("Album not found"));
+                
+            song.setAlbum(album);
+            Song savedSong = songRepository.save(song);
+            
+            // Update album
+            album.getSongs().add(savedSong);
+            album.setTotalTracks(album.getSongs().size());
+            album.setTotalDuration(calculateAlbumDuration(album.getSongs()));
+            album.setUpdatedAt(now);
+            albumRepository.save(album);
+            
+            return songMapper.toResponse(savedSong);
+        }
+        
+        return songMapper.toResponse(songRepository.save(song));
     }
     
-    @Override
-    public SongDTO updateSong(String id, SongDTO songDTO) {
-        return songRepository.findById(id)
-                .map(song -> {
-                    songMapper.updateEntityFromDto(songDTO, song);
-                    return songMapper.toDto(songRepository.save(song));
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Song not found with id: " + id));
+    private Integer calculateAlbumDuration(List<Song> songs) {
+        return songs.stream()
+            .map(Song::getDuration)
+            .filter(duration -> duration != null)
+            .reduce(0, Integer::sum);
     }
-    
+
     @Override
+    @Transactional
+    public SongResponse updateSong(String id, SongRequest request) {
+        Song song = songRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Song not found"));
+            
+        // Store old albumId to check if it changed
+        String oldAlbumId = song.getAlbum().getId();
+            
+        songMapper.updateEntityFromRequest(request, song);
+        
+        if (request.getAudioFile() != null) {
+            if (song.getAudioFileId() != null) {
+                fileStorageService.delete(song.getAudioFileId());
+            }
+            String audioFileId = fileStorageService.store(request.getAudioFile());
+            song.setAudioFileId(audioFileId);
+        }
+        
+        if (request.getImageFile() != null) {
+            if (song.getImageFileId() != null) {
+                fileStorageService.delete(song.getImageFileId());
+            }
+            String imageFileId = fileStorageService.store(request.getImageFile());
+            song.setImageFileId(imageFileId);
+        }
+        
+        song.setUpdatedAt(LocalDateTime.now());
+        
+        Song savedSong = songRepository.save(song);
+
+        // Handle album relationship changes
+        if (oldAlbumId != null && !oldAlbumId.equals(song.getAlbum().getId())) {
+            // Remove song from old album
+            Album oldAlbum = albumRepository.findById(oldAlbumId).orElse(null);
+            if (oldAlbum != null) {
+                oldAlbum.getSongs().remove(savedSong);
+                oldAlbum.setUpdatedAt(LocalDateTime.now());
+                albumRepository.save(oldAlbum);
+            }
+        }
+
+        if (savedSong.getAlbum() != null) {
+            Album newAlbum = albumRepository.findById(savedSong.getAlbum().getId())
+                .orElseThrow(() -> new RuntimeException("Album not found"));
+                
+            if (!newAlbum.getSongs().contains(savedSong)) {
+                newAlbum.getSongs().add(savedSong);
+                newAlbum.setUpdatedAt(LocalDateTime.now());
+                albumRepository.save(newAlbum);
+            }
+            
+            savedSong.setAlbum(newAlbum);
+        }
+        
+        return songMapper.toResponse(savedSong);
+    }
+
+    @Override
+    @Transactional
     public void deleteSong(String id) {
         Song song = songRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Song not found with id: " + id));
-        
+            .orElseThrow(() -> new ResourceNotFoundException("Song not found"));
+            
+        // Remove song from album if it belongs to one
+        if (song.getAlbum() != null) {
+            Album album = albumRepository.findById(song.getAlbum().getId()).orElse(null);
+            if (album != null) {
+                album.getSongs().remove(song);
+                album.setUpdatedAt(LocalDateTime.now());
+                albumRepository.save(album);
+            }
+        }
+            
         if (song.getAudioFileId() != null) {
-            gridFsTemplate.delete(Query.query(Criteria.where("_id").is(song.getAudioFileId())));
+            fileStorageService.delete(song.getAudioFileId());
         }
         
-        songRepository.deleteById(id);
-    }
-    
-    @Override
-    public byte[] getAudioFile(String audioFileId) {
-        try {
-            return gridFsTemplate.getResource(audioFileId).getInputStream().readAllBytes();
-        } catch (IOException e) {
-            throw new ResourceNotFoundException("Audio file not found with id: " + audioFileId);
+        if (song.getImageFileId() != null) {
+            fileStorageService.delete(song.getImageFileId());
         }
+        
+        songRepository.delete(song);
     }
-} 
+
+    @Override
+    public Resource getAudioFile(String id) {
+        Song song = songRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Song not found"));
+            
+        if (song.getAudioFileId() == null) {
+            throw new RuntimeException("Song has no audio file");
+        }
+        
+        return fileStorageService.load(song.getAudioFileId());
+    }
+
+    @Override
+    public List<SongResponse> getSongsByIds(List<String> songIds) {
+        return songRepository.findAllById(songIds)
+            .stream()
+            .map(songMapper::toResponse)
+            .collect(Collectors.toList());
+    }
+
+    // New methods for favorites
+    public SongResponse toggleFavorite(String id) {
+        Song song = songRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Song not found"));
+        song.setIsFavorite(!song.getIsFavorite());
+        Song savedSong = songRepository.save(song);
+        return songMapper.toResponse(savedSong);
+    }
+
+    public Page<SongResponse> getFavoriteSongs(Pageable pageable) {
+        return songRepository.findByIsFavoriteTrue(pageable)
+            .map(songMapper::toResponse);
+    }
+}

@@ -1,15 +1,21 @@
 package com.backend.music.service;
 
-import com.backend.music.dto.UserDTO;
+import com.backend.music.dto.request.RegisterRequest;
+import com.backend.music.dto.response.UserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.Set;
 
 public interface UserService {
-    Page<UserDTO> getAllUsers(Pageable pageable);
-    UserDTO getUserById(String id);
-    UserDTO createUser(UserDTO userDTO);
-    UserDTO updateUserRoles(String id, Set<String> roles);
-    void deleteUser(String id);
-    UserDTO getUserByUsername(String username);
+    Page<UserResponse> getAllUsers(Pageable pageable);
+    
+    UserResponse getUserById(String id);
+    
+    UserResponse createUser(RegisterRequest request);
+    
+    UserResponse updateUserRoles(String id, Set<String> roles);
+    
+    UserResponse getUserByUsername(String username);
+    
+    UserResponse toggleUserStatus(String id);
 } 

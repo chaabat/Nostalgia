@@ -11,31 +11,47 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import java.util.Date;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 @Data
 @Document(collection = "users")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User implements UserDetails {
     @Id
     private String id;
     
     @Indexed(unique = true)
-    private String login;
+    @NotBlank(message = "Username is required")
+    private String username;
+    
+    @Indexed(unique = true)
+    @Email(message = "Email should be valid")
+    @NotBlank(message = "Email is required")
+    private String email;
+    
     private String password;
     private Boolean active = true;
-    private Set<Role> roles = new HashSet<>();
-    private String email;
-    private String role;
+    private Set<String> roles = new HashSet<>();
+    private Date createdAt;
+    private Date updatedAt;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
     }
 
     @Override
     public String getUsername() {
-        return login;
+        return username;
     }
 
     @Override
