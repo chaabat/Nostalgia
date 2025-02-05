@@ -1,0 +1,225 @@
+<div class="min-h-screen bg-gray-50 font-mono p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header Section -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 mb-6 border border-gray-100">
+      <div class="flex items-center justify-between">
+        <!-- Title and Stats -->
+        <div class="flex items-center gap-8">
+          <!-- Stats -->
+          <div class="bg-gray-50 rounded-xl px-6 py-3 border border-gray-100">
+            <div class="flex items-center gap-3">
+              <mat-icon class="text-red-600">album</mat-icon>
+              <div class="font-mono">
+                <span class="text-sm text-gray-900">Total Albums</span>
+                <div class="text-2xl font-bold text-red-600">
+                  {{ (stats$ | async)?.total || 0 }}
+                </div>
+                <p class="text-black text-sm">Manage your Nostalgia Albums</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button
+          mat-flat-button
+          (click)="onCreateAlbum()"
+          class="bg-red-600 text-white hover:bg-red-700 !rounded-xl !px-6 !py-3 !font-mono"
+        >
+          <span class="flex items-center gap-2">
+            <mat-icon>add</mat-icon>
+            Create Album
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content Section -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+      <!-- Loading Overlay -->
+      <div class="relative">
+        <div
+          class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50"
+          *ngIf="loading$ | async"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <mat-spinner [diameter]="32" class="!text-red-600"></mat-spinner>
+            <span class="text-sm text-gray-600">Loading albums...</span>
+          </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div
+          *ngIf="error$ | async as error"
+          class="p-4 m-4 rounded-xl bg-red-50 border-l-4 border-red-500"
+        >
+          <div class="flex items-center gap-3">
+            <mat-icon class="text-red-500">error_outline</mat-icon>
+            <span class="text-red-700">{{ error }}</span>
+          </div>
+        </div>
+
+        <!-- Albums Table -->
+        <div class="overflow-hidden">
+          <table
+            mat-table
+            [dataSource]="(albums$ | async) || []"
+            class="w-full"
+          >
+            <!-- Cover Column -->
+            <ng-container matColumnDef="imageUrl">
+              <th mat-header-cell *matHeaderCellDef class="!pl-6">Cover</th>
+              <td mat-cell *matCellDef="let album" class="!pl-6">
+                <div class="relative group w-12 h-12">
+                  <img
+                    [src]="getImageUrl(album.imageUrl)"
+                    [alt]="album.title"
+                    class="w-full h-full rounded-xl object-cover shadow-sm group-hover:shadow-md transition-all duration-300"
+                  />
+                  <div
+                    class="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-all duration-300"
+                  ></div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Title Column -->
+            <ng-container matColumnDef="title">
+              <th mat-header-cell *matHeaderCellDef>Title</th>
+              <td mat-cell *matCellDef="let album">
+                <div class="py-3">
+                  <div class="font-medium text-gray-900">{{ album.title }}</div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Artist Column -->
+            <ng-container matColumnDef="artist">
+              <th mat-header-cell *matHeaderCellDef>Artist</th>
+              <td mat-cell *matCellDef="let album">
+                <div
+                  class="inline-flex items-center px-3 py-1 rounded-full bg-red-50 text-red-600 text-sm"
+                >
+                  {{ album.artist }}
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Release Date Column -->
+            <ng-container matColumnDef="releaseDate">
+              <th mat-header-cell *matHeaderCellDef>Release Date</th>
+              <td mat-cell *matCellDef="let album">
+                <div class="flex items-center gap-2">
+                  <mat-icon class="text-red-400 scale-75"
+                    >calendar_today</mat-icon
+                  >
+                  <span class="text-gray-700">{{
+                    album.releaseDate | date : "mediumDate"
+                  }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="!pr-6"></th>
+              <td mat-cell *matCellDef="let album" class="!pr-6">
+                <div class="flex items-center justify-end gap-2">
+                  <button
+                    mat-stroked-button
+                    (click)="onEdit(album)"
+                    class="!min-w-0 !px-3 !py-1 border-red-200 !text-red-600 hover:!bg-red-50 !rounded-lg"
+                    matTooltip="Edit Album"
+                  >
+                    <span class="flex items-center gap-1.5">
+                      <mat-icon class="!w-4 !h-4 !text-base">edit</mat-icon>
+                      <span class="text-sm font-medium">Edit</span>
+                    </span>
+                  </button>
+                  <button
+                    mat-stroked-button
+                    (click)="onDelete(album)"
+                    class="!min-w-0 !px-3 !py-1 !text-red-600 !border-red-200 hover:!bg-red-50 !rounded-lg"
+                    matTooltip="Delete Album"
+                  >
+                    <span class="flex items-center gap-1.5">
+                      <mat-icon class="!w-4 !h-4 !text-base">delete</mat-icon>
+                      <span class="text-sm font-medium">Delete</span>
+                    </span>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Table Rows -->
+            <tr
+              mat-header-row
+              *matHeaderRowDef="displayedColumns"
+              class="!bg-gray-50 !h-12"
+            ></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns"
+              class="hover:bg-gray-50/50 transition-colors"
+            ></tr>
+          </table>
+
+          <!-- Empty State -->
+          <div
+            *ngIf="(albums$ | async)?.length === 0"
+            class="flex flex-col items-center justify-center py-16 px-4"
+          >
+            <div class="bg-red-50 rounded-full p-6 mb-4">
+              <mat-icon class="text-red-600 transform scale-[2]"
+                >album</mat-icon
+              >
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-1">
+              No albums yet
+            </h3>
+            <p class="text-gray-500 text-sm mb-6 text-center max-w-sm">
+              Get started by creating your first album in the collection
+            </p>
+            <button
+              mat-flat-button
+              (click)="onCreateAlbum()"
+              class="bg-red-600 text-white hover:bg-red-700 !rounded-xl !px-6 !py-3"
+            >
+              <span class="flex items-center gap-2">
+                <mat-icon>add</mat-icon>
+                Create Album
+              </span>
+            </button>
+          </div>
+
+          <!-- Paginator -->
+          <mat-paginator
+            [length]="(total$ | async) || 0"
+            [pageSize]="pageSize"
+            [pageSizeOptions]="[5, 10, 25, 100]"
+            class="border-t border-gray-100"
+          >
+          </mat-paginator>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  ::ng-deep .mat-mdc-table {
+    background: transparent !important;
+  }
+
+  ::ng-deep .mat-mdc-paginator {
+    background: transparent !important;
+  }
+
+  ::ng-deep .mat-mdc-header-cell {
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #6b7280 !important;
+  }
+</style>

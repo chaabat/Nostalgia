@@ -1,0 +1,26 @@
+@use "@angular/material" as mat;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+// Include the common styles for Angular Material
+@include mat.core();
+
+// Define your theme
+$your-primary: mat.define-palette(mat.$indigo-palette);
+$your-accent: mat.define-palette(mat.$pink-palette);
+$your-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $your-primary,
+      accent: $your-accent,
+    ),
+  )
+);
+
+// Include theme styles for core and each component used
+@include mat.all-component-themes($your-theme);
+* {
+  margin: 0%;
+  padding: 0%;
+  box-sizing: border-box;
+}

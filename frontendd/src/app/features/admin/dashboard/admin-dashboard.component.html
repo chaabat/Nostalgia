@@ -1,0 +1,97 @@
+<div class="min-h-screen bg-gray-50 font-mono p-6">
+  <!-- Header -->
+  <div class="mb-10 flex justify-between items-center">
+    <div>
+      <h1
+        class="text-4xl font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent"
+      >
+        Dashboard
+      </h1>
+      <p class="mt-2 text-gray-600">Control your Nostalgia  </p>
+    </div>
+ 
+  </div>
+
+ 
+
+  <!-- Main Actions -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div
+      class="bg-gradient-to-br from-red-600 to-red-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <div class="flex flex-col h-full">
+        <div
+          class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-6"
+        >
+          <mat-icon class="text-white">album</mat-icon>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Albums</h2>
+        <p class="text-red-100 mb-6 text-sm">
+          Manage your music collection and organize albums
+        </p>
+        <button
+          mat-flat-button
+          routerLink="/admin/albums"
+          class="mt-auto bg-white/20 hover:bg-white/30 text-white border border-white/30 !rounded-xl"
+        >
+          <span class="flex items-center justify-between w-full">
+            <span>View Albums</span>
+            <mat-icon>arrow_forward</mat-icon>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <div class="flex flex-col h-full">
+        <div
+          class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-6"
+        >
+          <mat-icon class="text-white">music_note</mat-icon>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Songs</h2>
+        <p class="text-gray-300 mb-6 text-sm">
+          Manage your songs and audio files
+        </p>
+        <button
+          mat-flat-button
+          routerLink="/admin/songs"
+          class="mt-auto bg-white/20 hover:bg-white/30 text-white border border-white/30 !rounded-xl"
+        >
+          <span class="flex items-center justify-between w-full">
+            <span>View Songs</span>
+            <mat-icon>arrow_forward</mat-icon>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="bg-gradient-to-br from-gray-800 to-gray-700 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow"
+    >
+      <div class="flex flex-col h-full">
+        <div
+          class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-6"
+        >
+          <mat-icon class="text-white">people</mat-icon>
+        </div>
+        <h2 class="text-2xl font-bold mb-2">Users</h2>
+        <p class="text-gray-300 mb-6 text-sm">
+          Manage user accounts and permissions
+        </p>
+        <button
+          mat-flat-button
+          routerLink="/admin/users"
+          class="mt-auto bg-white/20 hover:bg-white/30 text-white border border-white/30 !rounded-xl"
+        >
+          <span class="flex items-center justify-between w-full">
+            <span>View Users</span>
+            <mat-icon>arrow_forward</mat-icon>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

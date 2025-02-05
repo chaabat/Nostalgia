@@ -1,0 +1,224 @@
+<div class="min-h-screen bg-gray-50 font-mono p-6">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8 flex items-center gap-4">
+      <button
+        mat-icon-button
+        (click)="onCancel()"
+        class="bg-white hover:bg-red-50 border border-gray-100 shadow-sm !rounded-xl"
+      >
+        <mat-icon class="text-red-600">arrow_back</mat-icon>
+      </button>
+      <div>
+        <h1
+          class="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent"
+        >
+          {{ isEditMode ? "Edit" : "New" }} Album
+        </h1>
+        <p class="text-gray-600 text-sm mt-1">
+          {{
+            isEditMode
+              ? "Update album details"
+              : "Add a new album to your collection"
+          }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-2xl shadow-sm p-8 border border-gray-100">
+      <form [formGroup]="albumForm" (ngSubmit)="onSubmit()" class="space-y-8">
+        <!-- Cover Image Section -->
+        <div class="flex items-start gap-8 pb-8 border-b border-gray-100">
+          <!-- Image Preview -->
+          <div class="relative group">
+            <div
+              class="w-40 h-40 rounded-2xl bg-gray-50 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-200"
+            >
+              <img
+                *ngIf="imagePreview"
+                [src]="imagePreview"
+                alt="Album cover preview"
+                class="w-full h-full object-cover"
+              />
+              <mat-icon
+                *ngIf="!imagePreview"
+                class="text-gray-400 transform scale-150"
+                >image</mat-icon
+              >
+            </div>
+            <div
+              class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center"
+            >
+              <button
+                type="button"
+                mat-icon-button
+                (click)="imageFileInput.click()"
+                class="text-white"
+              >
+                <mat-icon>upload</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload Info -->
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+              Album Cover
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+              Upload a high-quality cover image for your album. Recommended
+              size: 500x500px
+            </p>
+
+            <input
+              #imageFileInput
+              type="file"
+              (change)="onFileSelected($event)"
+              accept="image/*"
+              class="hidden"
+            />
+
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                mat-stroked-button
+                (click)="imageFileInput.click()"
+                class="border-red-600 text-red-600 hover:bg-red-50 !rounded-xl"
+              >
+                <mat-icon class="mr-2">upload</mat-icon>
+                {{ isEditMode ? "Change" : "Upload" }} Cover
+              </button>
+              <span *ngIf="imageFile" class="text-sm text-gray-500">
+                {{ imageFile.name }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Fields -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Left Column -->
+          <div class="space-y-6">
+            <!-- Title Field -->
+            <mat-form-field   class="w-full">
+              <mat-label>Album Title</mat-label>
+              <input
+                matInput
+                formControlName="title"
+                required
+                placeholder="Enter album title"
+              />
+              <mat-icon matPrefix class="mr-2 text-gray-400">album</mat-icon>
+              <mat-error *ngIf="albumForm.get('title')?.hasError('required')">
+                Title is required
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Artist Field -->
+            <mat-form-field  class="w-full">
+              <mat-label>Artist</mat-label>
+              <input
+                matInput
+                formControlName="artist"
+                required
+                placeholder="Enter artist name"
+              />
+              <mat-icon matPrefix class="mr-2 text-gray-400">person</mat-icon>
+              <mat-error *ngIf="albumForm.get('artist')?.hasError('required')">
+                Artist is required
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Release Date Field -->
+            <mat-form-field  class="w-full">
+              <mat-label>Release Date</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker"
+                formControlName="releaseDate"
+                required
+              />
+              <mat-icon matPrefix class="mr-2 text-gray-400"
+                >calendar_today</mat-icon
+              >
+              <mat-datepicker-toggle
+                matSuffix
+                [for]="picker"
+              ></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-error
+                *ngIf="albumForm.get('releaseDate')?.hasError('required')"
+              >
+                Release date is required
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Right Column -->
+          <div class="space-y-6">
+            <!-- Category Field -->
+            <mat-form-field  class="w-full">
+              <mat-label>Category</mat-label>
+              <mat-select formControlName="category" required>
+                <mat-option
+                  *ngFor="let category of categories"
+                  [value]="category.name"
+                >
+                  {{ category.displayName }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix class="mr-2 text-gray-400">category</mat-icon>
+              <mat-error
+                *ngIf="albumForm.get('category')?.hasError('required')"
+              >
+                Category is required
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Genre Field -->
+            <mat-form-field  class="w-full">
+              <mat-label>Genre</mat-label>
+              <mat-select formControlName="genre" required>
+                <mat-option *ngFor="let genre of genres" [value]="genre.name">
+                  {{ genre.displayName }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix class="mr-2 text-gray-400"
+                >music_note</mat-icon
+              >
+              <mat-error *ngIf="albumForm.get('genre')?.hasError('required')">
+                Genre is required
+              </mat-error>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div
+          class="flex items-center justify-end gap-4 pt-6 border-t border-gray-100"
+        >
+          <button
+            mat-stroked-button
+            type="button"
+            (click)="onCancel()"
+            class="border-gray-300 !rounded-xl hover:bg-red-50"
+          >
+            Cancel
+          </button>
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="albumForm.invalid"
+            class="bg-red-600 text-white hover:bg-red-700 !rounded-xl"
+          >
+            <span class="flex items-center gap-2">
+              <mat-icon>{{ isEditMode ? "save" : "add" }}</mat-icon>
+              {{ isEditMode ? "Update" : "Create" }} Album
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,128 @@
+<div class="h-screen w-screen flex flex-row font-mono">
+  <!-- Mobile menu button -->
+  <button
+    (click)="sidenav.open()"
+    class="p-2 border-2 bg-white rounded-md border-gray-200 shadow-lg text-gray-500 focus:bg-red-600 focus:outline-none focus:text-white absolute top-0 left-0 sm:hidden"
+  >
+    <svg
+      class="w-5 h-5 fill-current"
+      viewBox="0 0 20 20"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+        clip-rule="evenodd"
+      ></path>
+    </svg>
+  </button>
+
+  <!-- Sidebar -->
+  <mat-sidenav-container class="h-full w-full">
+    <mat-sidenav
+      #sidenav
+      [mode]="isSmallScreen ? 'over' : 'side'"
+      [opened]="!isSmallScreen"
+      class="bg-white h-screen shadow-xl px-3 w-30 md:w-60 lg:w-60 overflow-x-hidden"
+    >
+      <div class="space-y-6 md:space-y-10 mt-10">
+        <!-- Logo -->
+        <h1 class="font-bold text-4xl text-center md:hidden">
+          M<span class="text-red-600">.</span>
+        </h1>
+        <h1
+          class="hidden md:block font-bold text-sm md:text-xl text-center font-mono"
+        >
+          Nonstalgia <span class="text-red-600 font-mono text-sm">Admin</span>
+        </h1>
+
+        <!-- Profile -->
+
+        <!-- Navigation Menu -->
+        <div class="flex flex-col space-y-2">
+          <a
+            routerLink="/admin/dashboard"
+            routerLinkActive="bg-red-600 text-white"
+            class="text-sm font-medium text-gray-700 py-2 px-2 hover:bg-red-600 hover:text-white hover:scale-105 rounded-md transition duration-150 ease-in-out flex items-center"
+            (click)="isSmallScreen && sidenav.close()"
+          >
+            <mat-icon class="w-6 h-6 mr-2">dashboard</mat-icon>
+            <span>Dashboard</span>
+          </a>
+
+          <a
+            routerLink="/admin/albums"
+            routerLinkActive="bg-red-600 text-white"
+            class="text-sm font-medium text-gray-700 py-2 px-2 hover:bg-red-600 hover:text-white hover:scale-105 rounded-md transition duration-150 ease-in-out flex items-center"
+            (click)="isSmallScreen && sidenav.close()"
+          >
+            <mat-icon class="w-6 h-6 mr-2">album</mat-icon>
+            <span>Albums</span>
+          </a>
+
+          <a
+            routerLink="/admin/songs"
+            routerLinkActive="bg-red-600 text-white"
+            class="text-sm font-medium text-gray-700 py-2 px-2 hover:bg-red-600 hover:text-white hover:scale-105 rounded-md transition duration-150 ease-in-out flex items-center"
+            (click)="isSmallScreen && sidenav.close()"
+          >
+            <mat-icon class="w-6 h-6 mr-2">music_note</mat-icon>
+            <span>Songs</span>
+          </a>
+
+
+        </div>
+      </div>
+    </mat-sidenav>
+
+    <!-- Main Content -->
+    <mat-sidenav-content class="bg-gray-50">
+      <mat-toolbar class="bg-white border-b border-gray-200 px-4 shadow-sm">
+        <span class="text-base sm:text-lg font-medium text-gray-800 truncate">
+          Nostalgia 
+        </span>
+        <span class="flex-1"></span>
+        <div class="flex items-center gap-2">
+
+          <button
+            mat-button
+            class="hidden md:flex items-center gap-2 hover:bg-red-600 hover:text-white"
+            routerLink="/user/library"
+          >
+            <mat-icon>library_music</mat-icon>
+            <span>Music Library</span>
+          </button>
+          <button
+            mat-icon-button
+            [matMenuTriggerFor]="menu"
+            class="hover:bg-red-600 hover:text-white"
+          >
+            <mat-icon>account_circle</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu" class="min-w-[200px]">
+            <button mat-menu-item routerLink="/user/library" class="md:hidden">
+              <mat-icon>library_music</mat-icon>
+              <span>Music Library</span>
+            </button>
+            <button mat-menu-item (click)="logout()">
+              <mat-icon>exit_to_app</mat-icon>
+              <span>Logout</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-toolbar>
+
+      <div class="p-4 sm:p-6">
+        <router-outlet></router-outlet>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+
+  <!-- Overlay for mobile -->
+  <div
+    class="fixed inset-0 bg-black/50 lg:hidden transition-opacity duration-200"
+    [class.opacity-0]="!sidenav?.opened"
+    [class.invisible]="!sidenav?.opened"
+    (click)="sidenav.close()"
+  ></div>
+</div>
